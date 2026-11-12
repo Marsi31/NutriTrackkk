@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NutriTrack">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+<title>NutriTrack</title>
+</head>
+<body>
+
+<main id="app">
+
+  <!-- INICI -->
+  <section class="view active" id="view-home">
+    <header class="top">
+      <button class="icon-btn" id="prev-day" aria-label="Dia anterior">‹</button>
+      <div class="date-title"><h1 id="day-label">Avui</h1><small id="day-sub"></small></div>
+      <button class="icon-btn" id="next-day" aria-label="Dia següent">›</button>
+    </header>
+
+    <div class="card hero">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 120 120" class="ring">
+          <circle class="ring-bg" cx="60" cy="60" r="52"/>
+          <circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="52"/>
+        </svg>
+        <div class="ring-center">
+          <strong id="kcal-left">0</strong>
+          <span id="kcal-left-label">kcal restants</span>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div><b id="kcal-eaten">0</b><span>Consumides</span></div>
+        <div><b id="kcal-goal">0</b><span>Objectiu</span></div>
+      </div>
+    </div>
+
+    <div class="card macros" id="macros"></div>
+
+    <div id="meals"></div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section class="view" id="view-history">
+    <header class="top"><h1>Historial</h1></header>
+    <div id="history-list"></div>
+  </section>
+
+  <!-- PES -->
+  <section class="view" id="view-weight">
+    <header class="top"><h1>Pes</h1></header>
+    <div class="card">
+      <form id="weight-form" class="row">
+        <input type="number" id="weight-input" inputmode="decimal" step="0.1" min="20" max="400" placeholder="Pes (kg)" required>
+        <button class="btn primary" type="submit">Desa</button>
+      </form>
+    </div>
+    <div class="card">
+      <div class="chart-head"><b>Evolució</b><span id="weight-delta"></span></div>
+      <canvas id="weight-chart" height="220"></canvas>
+      <p class="empty" id="weight-empty">Afegeix almenys dos pesos per veure la gràfica.</p>
+    </div>
+    <div id="weight-list"></div>
+  </section>
+
+  <!-- PERFIL -->
+  <section class="view" id="view-profile">
+    <header class="top"><h1>Perfil</h1></header>
+    <form class="card" id="goals-form">
+      <h2>Objectius diaris</h2>
+      <label>Calories (kcal)<input type="number" inputmode="numeric" id="g-kcal" min="0" required></label>
+      <div class="grid3">
+        <label>Proteïnes (g)<input type="number" inputmode="numeric" id="g-p" min="0" required></label>
+        <label>Hidrats (g)<input type="number" inputmode="numeric" id="g-c" min="0" required></label>
+        <label>Greixos (g)<input type="number" inputmode="numeric" id="g-f" min="0" required></label>
+      </div>
+      <p class="hint" id="g-hint"></p>
+      <button class="btn primary block" type="submit">Desa objectius</button>
+    </form>
+
+    <div class="card">
+      <h2>Dades</h2>
+      <p class="hint">Tot es guarda només en aquest dispositiu. Fes còpies de seguretat de tant en tant.</p>
+      <button class="btn block" id="export-btn">Exporta còpia (JSON)</button>
+      <label class="btn block file-btn">Importa còpia<input type="file" id="import-input" accept="application/json" hidden></label>
+      <button class="btn danger block" id="wipe-btn">Esborra totes les dades</button>
+    </div>
+    <p class="foot">NutriTrack · dades alimentàries de <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (ODbL)</p>
+  </section>
+
+</main>
+
+<button class="fab" id="fab" aria-label="Afegeix aliment">+</button>
+
+<nav class="tabbar">
+  <button class="tab active" data-view="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Inici</span></button>
+  <button class="tab" data-view="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Historial</span></button>
+  <button class="tab" data-view="weight"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 8-9"/><path d="M15 6h5v5"/></svg><span>Pes</span></button>
+  <button class="tab" data-view="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Perfil</span></button>
+</nav>
+
+<!-- FULL D'AFEGIR / EDITAR ALIMENT -->
+<div class="sheet-backdrop" id="sheet-backdrop" hidden>
+  <div class="sheet" id="sheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <h2 id="sheet-title">Afegeix menjar</h2>
+      <button type="button" class="icon-btn" id="sheet-close" aria-label="Tanca">✕</button>
+    </div>
+
+    <!-- ASSISTENT: escriure, foto o codi de barres -->
+    <div id="assist">
+      <div class="chips" id="meal-chips" role="group" aria-label="Àpat">
+        <button type="button" class="chip" data-meal="esmorzar">Esmorzar</button>
+        <button type="button" class="chip" data-meal="dinar">Dinar</button>
+        <button type="button" class="chip" data-meal="sopar">Sopar</button>
+        <button type="button" class="chip" data-meal="snack">Snack</button>
+      </div>
+
+      <textarea id="a-text" rows="4" autocapitalize="sentences" placeholder="Escriu què has menjat…&#10;Ex.: He menjat 250 g de patata bullida i 150 g de coliflor"></textarea>
+
+      <button type="button" class="btn primary block big" id="calc-btn">Calcular</button>
+
+      <div class="quick-row">
+        <label class="btn ghost file-btn">📷 Fer foto<input type="file" id="a-photo" accept="image/*" capture="environment" hidden></label>
+        <button type="button" class="btn ghost" id="a-scan-btn">▥ Codi de barres</button>
+      </div>
+
+      <div class="photo-note" id="a-photo-note" hidden>
+        <img id="a-photo-preview" alt="Foto del plat">
+        <div>
+          <p><b>Foto desada amb l'àpat.</b> NutriTrack no pot identificar el menjar d'una foto de manera fiable i gratuïta: descriu què hi ha al plat i prem <i>Calcular</i>.</p>
+          <button type="button" class="btn small" id="a-photo-remove">Treu la foto</button>
+        </div>
+      </div>
+
+      <p class="hint" id="a-msg" role="status"></p>
+      <div id="a-results"></div>
+      <div class="totals" id="a-totals" hidden></div>
+
+      <div class="sticky-save">
+        <p class="hint" id="a-block"></p>
+        <button type="button" class="btn primary block big" id="a-save" disabled>Afegeix a l'àpat</button>
+      </div>
+    </div>
+
+    <!-- FORMULARI MANUAL (també serveix per editar un aliment ja desat) -->
+    <details id="manual-box">
+      <summary>Introduir valors manualment</summary>
+      <form id="food-form">
+        <label>Àpat
+          <select id="f-meal">
+            <option value="esmorzar">Esmorzar</option>
+            <option value="dinar">Dinar</option>
+            <option value="sopar">Sopar</option>
+            <option value="snack">Berenar / Snack</option>
+          </select>
+        </label>
+
+        <label>Codi de barres
+          <div class="row">
+            <input type="text" id="f-barcode" inputmode="numeric" placeholder="EAN / UPC">
+            <button type="button" class="btn" id="lookup-btn">Cerca</button>
+            <button type="button" class="btn" id="scan-btn">Escaneja</button>
+          </div>
+        </label>
+        <p class="hint" id="lookup-msg"></p>
+
+        <label>Nom<input type="text" id="f-name" placeholder="Ex.: Arròs bullit" required></label>
+
+        <label>Quantitat (g o ml)<input type="number" id="f-qty" inputmode="decimal" min="0" step="any" value="100" required></label>
+
+        <p class="hint">Valors nutricionals per cada 100 g / ml</p>
+        <div class="grid4">
+          <label>kcal<input type="number" id="f-kcal" inputmode="decimal" min="0" step="any" required></label>
+          <label>Prot.<input type="number" id="f-p" inputmode="decimal" min="0" step="any" value="0"></label>
+          <label>Hidr.<input type="number" id="f-c" inputmode="decimal" min="0" step="any" value="0"></label>
+          <label>Greix<input type="number" id="f-f" inputmode="decimal" min="0" step="any" value="0"></label>
+        </div>
+
+        <div class="preview" id="f-preview"></div>
+
+        <div class="photo-row">
+          <label class="btn file-btn">📷 Foto del plat<input type="file" id="f-photo" accept="image/*" capture="environment" hidden></label>
+          <img id="f-photo-preview" alt="" hidden>
+          <button type="button" class="btn small" id="f-photo-remove" hidden>Treu</button>
+        </div>
+
+        <div class="row end">
+          <button type="button" class="btn danger" id="delete-btn" hidden>Elimina</button>
+          <button type="submit" class="btn primary grow">Desa</button>
+        </div>
+      </form>
+    </details>
+  </div>
+</div>
+
+<!-- ESCÀNER DE CODIS DE BARRES (decodificador propi, compatible amb Safari) -->
+<div class="scanner" id="scanner" hidden>
+  <video id="scan-video" playsinline muted autoplay></video>
+  <div class="scan-top"><button type="button" class="btn small" id="scan-close">✕ Tanca</button></div>
+  <div class="scan-frame"></div>
+  <p id="scan-msg">Apunta al codi de barres</p>
+  <div class="scan-bottom">
+    <label class="btn small file-btn">📷 Foto del codi<input type="file" id="scan-photo" accept="image/*" capture="environment" hidden></label>
+    <div class="row">
+      <input type="text" id="scan-code" inputmode="numeric" placeholder="o escriu el codi">
+      <button type="button" class="btn small primary" id="scan-go">Cerca</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<div class="viewer" id="viewer" hidden><img id="viewer-img" alt=""></div>
+
+<script src="foods.js"></script>
+<script src="nlp.js"></script>
+<script src="barcode.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
